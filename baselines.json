@@ -1,0 +1,101 @@
+{
+  "updated_at": "2026-05-22T03:39:18Z",
+  "benches": {
+    "bus_dispatch": {
+      "kind": "micro",
+      "elapsed_ns": 8740324,
+      "maxrss_kb": 57256,
+      "tolerance": 0.30
+    },
+    "bus_dispatch_heap_payload": {
+      "kind": "micro",
+      "elapsed_ns": 4838914,
+      "maxrss_kb": 31456,
+      "tolerance": 0.30
+    },
+    "bus_publish_shm_ring": {
+      "kind": "micro",
+      "elapsed_ns": 1379558,
+      "maxrss_kb": 5124,
+      "tolerance": 0.30
+    },
+    "coord_with_churn": {
+      "kind": "micro",
+      "elapsed_ns": 48030,
+      "maxrss_kb": 5456,
+      "tolerance": 0.3
+    },
+    "fn_call": {
+      "kind": "micro",
+      "elapsed_ns": 16509134,
+      "maxrss_kb": 5040,
+      "tolerance": 0.30
+    },
+    "fn_scratch_work": {
+      "kind": "micro",
+      "elapsed_ns": 404015,
+      "maxrss_kb": 4992,
+      "tolerance": 0.30
+    },
+    "form_hashmap_get": {
+      "kind": "micro",
+      "elapsed_ns": 8865979,
+      "maxrss_kb": 48788,
+      "tolerance": 0.30
+    },
+    "form_hashmap_set": {
+      "kind": "micro",
+      "elapsed_ns": 48356203,
+      "maxrss_kb": 92928,
+      "tolerance": 0.30
+    },
+    "form_vec_get": {
+      "kind": "micro",
+      "elapsed_ns": 9623886,
+      "maxrss_kb": 43984,
+      "tolerance": 0.30
+    },
+    "form_vec_push": {
+      "kind": "micro",
+      "elapsed_ns": 31035452,
+      "maxrss_kb": 82960,
+      "tolerance": 0.30
+    },
+    "locus_instantiation": {
+      "kind": "micro",
+      "elapsed_ns": 1785337,
+      "maxrss_kb": 5132,
+      "tolerance": 0.30
+    },
+    "loop_overhead": {
+      "kind": "micro",
+      "elapsed_ns": 12014895,
+      "maxrss_kb": 5140,
+      "tolerance": 0.30
+    },
+    "pipeline_3stage": {
+      "kind": "micro",
+      "elapsed_ns": 7516528,
+      "maxrss_kb": 39124,
+      "tolerance": 0.30
+    },
+    "tree_fanout": {
+      "kind": "micro",
+      "elapsed_ns": 23665,
+      "maxrss_kb": 5136,
+      "tolerance": 0.30
+    },
+    "vec_amortized": {
+      "kind": "micro",
+      "elapsed_ns": 1079067,
+      "maxrss_kb": 6456,
+      "tolerance": 0.30
+    },
+    "stream_aggregator": {
+      "kind": "app",
+      "elapsed_ns": 18109545,
+      "maxrss_kb": 109584,
+      "tolerance": 0.30
+    }
+  }
+}

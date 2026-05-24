@@ -1,0 +1,25 @@
+# Per-run JSON reports.
+results/
+
+# Compiled bench binaries land next to their .hl source. Source
+# files for each language stay tracked (.hl, .go, .js, .py); the
+# compiled binary that lands next to them does not.
+micro/*
+!micro/*.hl
+!micro/*.go
+!micro/*.js
+!micro/*.py
+app/*
+!app/*.hl
+!app/*.go
+!app/*.js
+!app/*.py
+c-twins/*
+!c-twins/*.c
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~

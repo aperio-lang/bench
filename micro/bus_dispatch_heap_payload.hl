@@ -1,0 +1,57 @@
+// bus_dispatch_heap_payload — cooperative dispatch with a String
+// payload field.
+//
+// Same shape as bus_dispatch.hl but the payload carries a String
+// field, forcing the m70 wire codec to serialize/deserialize the
+// pointer on the receive side — the str_clone-into-subscriber-arena
+// path that the bus_dispatch.hl scalar-only payload skips. The
+// canonical shape for any real-world topic: trade ticks with a
+// symbol, log events with a message, etc.
+
+type Beat {
+    n:     Int;
+    label: String;
+}
+
+locus Counter {
+    params {
+        count: Int = 0;
+    }
+    bus {
+        subscribe "bench.beat.heap" as on_beat of type Beat;
+    }
+    fn on_beat(b: Beat) {
+        self.count = self.count + 1;
+    }
+}
+
+locus Pub {
+    params { iters: Int = 50000; }
+    bus {
+        publish "bench.beat.heap" of type Beat;
+    }
+    run() {
+        let mut i = 0;
+        while i < self.iters {
+            "bench.beat.heap" <- Beat { n: i, label: "tick" };
+            i = i + 1;
+        }
+    }
+}
+
+fn main() {
+    // Half the iter count of bus_dispatch.hl because the heap-
+    // payload deserialize-into-subscriber-arena path is ~2-3x
+    // the scalar cost — keeps wall-clock comparable.
+    let iters = 50000;
+    let c = Counter { };
+    let t0 = std::time::monotonic();
+    Pub { iters: iters };
+    let t1 = std::time::monotonic();
+    print("iters=");
+    println(iters);
+    print("count=");
+    println(c.count);
+    print("elapsed_ns=");
+    println(t1 - t0);
+}

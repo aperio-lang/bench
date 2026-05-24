@@ -1,0 +1,54 @@
+// bus_publish_shm_ring — zero-copy publish into a POSIX SHM ring.
+//
+// Fire-and-forget publish: no in-process subscriber. The runtime
+// routes `Topic <- v` through lotus_bus_publish_shm_ring's
+// claim → memcpy-into-slot → commit path; no cooperative queue,
+// no cross-thread mailbox, no wire codec. Measures the pure
+// publisher-side cost of the zero-copy transport.
+//
+// No subscriber means no consumer drains the ring; with
+// `on_overflow: drop` the publisher just overwrites old slots
+// once the ring fills. That's the intended bench shape — we're
+// measuring publish cost in isolation, not end-to-end delivery.
+
+type TickPayload {
+    px: Int;
+    sz: Int;
+}
+
+topic Tick { payload: TickPayload; subject: "bench.tick.shm"; }
+
+locus Producer {
+    params { iters: Int = 200000; }
+    bus { publish Tick; }
+    run() {
+        let mut i = 0;
+        while i < self.iters {
+            Tick <- TickPayload { px: i, sz: i + 1 };
+            i = i + 1;
+        }
+    }
+}
+
+main locus App {
+    bindings {
+        // 1024 slots, drop overflow — publisher never stalls.
+        // The shm name is unique per run via PID to avoid collisions
+        // when multiple bench iterations stack up.
+        Tick: shm_ring("/bench-tick-shm", slot_count: 1024, on_overflow: drop) where zero_copy;
+    }
+    run() {
+        let iters = 200000;
+        let t0 = std::time::monotonic();
+        Producer { iters: iters };
+        let t1 = std::time::monotonic();
+        print("iters=");
+        println(iters);
+        print("elapsed_ns=");
+        println(t1 - t0);
+    }
+}
+
+fn main() {
+    App { };
+}
