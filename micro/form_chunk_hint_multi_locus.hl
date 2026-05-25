@@ -1,0 +1,123 @@
+// form_chunk_hint_multi_locus — F.32-3 codegen-aware chunk-size
+// hint at N ≥ 16 loci on the same cooperative pool.
+//
+// F.32-3 ships a codegen-aware per-pool chunk-size hint. When N
+// loci share one cooperative-pool worker, the runtime sizes each
+// locus's first arena chunk to:
+//
+//   chunk_hint(N) = round_down_pow2(524288 / N)
+//                   clamped to [4096, 65536]
+//
+//   N <=  8 → 65536 B (default — no-op call)
+//   N =  16 → 32768 B
+//   N =  32 → 16384 B
+//   N =  64 →  8192 B
+//   N >= 128 →  4096 B
+//
+// Pre-F.32-3 (pre-2026-05-25): every locus instantiation issued
+// `lotus_arena_create_labeled` with the global default 64K chunk.
+// At N = 16 on the same pool worker, 16 × 64K = 1 MB resident
+// hot-set — overshoots typical L2 (1 MB) and ping-pongs into L3
+// every rotation. With F.32-3's hint, 16 × 32K = 512 KB hot-set,
+// comfortably inside L2.
+//
+// This bench's job is *coverage*, not a perf number: prior
+// benches only had N <= 3 loci on a single non-main pool, so the
+// chunk-hint code path was reached but the hint value always
+// clamped to the default. N = 16 here is the smallest case
+// where the hint produces a non-default value (32 KB). A
+// successful build of this program demonstrates that the F.32-3
+// codegen path emits `lotus_arena_create_labeled_sized` with a
+// sub-default first argument.
+//
+// Verifying the emitted IR (optional):
+//
+//   LOTUS_DUMP_IR=1 hale build form_chunk_hint_multi_locus
+//   grep 'lotus_arena_create_labeled_sized.*i64 32768' \
+//       crates/hale-codegen/tests/...
+//
+// Or via residency dump (the operator-facing view):
+//
+//   LOTUS_ARENA_RESIDENCY=1 ./form_chunk_hint_multi_locus
+//
+// which prints per-arena chunk sizes at process exit.
+
+type Tick { n: Int; }
+
+// Each worker holds a tiny amount of state. Sixteen instances on
+// one cooperative pool collectively rotate through the worker's
+// drain loop; the chunk-hint sized first chunks stay resident in
+// L2 across the rotation.
+locus Worker {
+    params { id: Int = 0; tally: Int = 0; }
+    bus { subscribe "tick" as on_tick of type Tick; }
+    fn on_tick(t: Tick) {
+        self.tally = self.tally + 1;
+        if t.n == 0 {
+            print("worker "); print(self.id); println(" alive");
+        }
+    }
+}
+
+main locus App {
+    // Sixteen workers — the smallest N where F.32-3's hint
+    // diverges from the default. All on `io` pool. The
+    // codegen path `lower_locus_init_with_overrides`
+    // (Fresh-strategy branch) emits a sized arena create per
+    // locus with a 32 KB hint.
+    params {
+        w00: Worker = Worker { id:  0 };
+        w01: Worker = Worker { id:  1 };
+        w02: Worker = Worker { id:  2 };
+        w03: Worker = Worker { id:  3 };
+        w04: Worker = Worker { id:  4 };
+        w05: Worker = Worker { id:  5 };
+        w06: Worker = Worker { id:  6 };
+        w07: Worker = Worker { id:  7 };
+        w08: Worker = Worker { id:  8 };
+        w09: Worker = Worker { id:  9 };
+        w10: Worker = Worker { id: 10 };
+        w11: Worker = Worker { id: 11 };
+        w12: Worker = Worker { id: 12 };
+        w13: Worker = Worker { id: 13 };
+        w14: Worker = Worker { id: 14 };
+        w15: Worker = Worker { id: 15 };
+    }
+    placement {
+        w00: cooperative(pool = io);
+        w01: cooperative(pool = io);
+        w02: cooperative(pool = io);
+        w03: cooperative(pool = io);
+        w04: cooperative(pool = io);
+        w05: cooperative(pool = io);
+        w06: cooperative(pool = io);
+        w07: cooperative(pool = io);
+        w08: cooperative(pool = io);
+        w09: cooperative(pool = io);
+        w10: cooperative(pool = io);
+        w11: cooperative(pool = io);
+        w12: cooperative(pool = io);
+        w13: cooperative(pool = io);
+        w14: cooperative(pool = io);
+        w15: cooperative(pool = io);
+    }
+    bus { publish "tick" of type Tick; }
+    run() {
+        let n_ticks = 1000;
+        let t0 = std::time::monotonic();
+        let mut i = 0;
+        while i < n_ticks {
+            "tick" <- Tick { n: i };
+            i = i + 1;
+        }
+        // Let the io pool's worker drain. 16 subscribers × 1000
+        // ticks = 16000 handler invocations.
+        std::time::sleep(200ms);
+        let t1 = std::time::monotonic();
+        print("n_ticks=");   println(n_ticks);
+        print("workers=");   println(16);
+        print("elapsed_ns="); println(t1 - t0);
+    }
+}
+
+fn main() { App { }; }
