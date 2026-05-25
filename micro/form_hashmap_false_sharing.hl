@@ -1,0 +1,94 @@
+// form_hashmap_false_sharing — two threads hammer disjoint keys
+// of a shared @form(hashmap), exercising the cross-pool cell-
+// access exemption (spec/types.md § "Single-threaded-method
+// invariant (F.31)" → "Interaction with @form(...) loci").
+//
+// The headline F.32-1 bench. Pre-F.32-0 (with plain @form(hashmap)
+// allowed cross-pool): two writers double-free during concurrent
+// grow — `lotus_hashmap_set` / `_grow` had no synchronization.
+// Post-F.32-1α (`sync = serialized`): correct via per-map mutex;
+// throughput bounded by lock contention. Post-F.32-1β2 (planned
+// `sync = striped`): per-cell atomic + cache-padded cells,
+// parallel writers free of MESI ping-pong on adjacent slots.
+//
+// Wiring shape: PoolHost owns the Registry and lives on the io
+// pool. App (main pool) accesses Registry via the
+// `self.host.reg.*` path. PoolHost's run() writes odd ids from
+// the io thread; App's run() writes even ids from main. Both
+// touch the same Registry — adjacent cells, two threads, the
+// canonical false-sharing scenario from the F.32 plan's
+// Prometheus-counter shape.
+//
+// The bench is wired with `sync = serialized` for the 2026-05-24
+// ship — the only discipline available to the bench harness
+// today. When F.32-1β2 lands, this annotation flips to
+// `sync = striped` and the bench delivers a real false-sharing-
+// avoidance signal vs the serialized baseline. The C twin at
+// experiments/f32-false-sharing/ in the hale repo establishes
+// the theoretical ceiling (~5x for pure increments).
+
+type Counter {
+    id:    Int;
+    value: Int;
+}
+
+// 2026-05-25: β2-v2 shipped — sync = striped now uses cell-
+// level CAS for parallel writers. Two writer pools running
+// concurrently get true parallel slot claim through the
+// 3-state occupancy machinery (EMPTY → CLAIMED → COMMITTED
+// via __atomic_compare_exchange_n). Baseline measures the
+// CAS+rwlock-rdlock path's throughput vs α's plain-mutex
+// serialized path.
+@form(hashmap, sync = striped)
+locus Registry {
+    capacity { pool entries of Counter indexed_by id; }
+}
+
+locus PoolHost {
+    params { reg: Registry = Registry { }; }
+    run() {
+        let mut i = 0;
+        while i < 100000 {
+            self.reg.set(Counter { id: i * 2 + 1, value: i });
+            i = i + 1;
+        }
+    }
+}
+
+main locus App {
+    params {
+        host: PoolHost = PoolHost { };
+    }
+    placement {
+        host: cooperative(pool = io);
+    }
+    run() {
+        let per_writer = 100000;
+        let total      = per_writer * 2;
+        let t0 = std::time::monotonic();
+
+        // Main writes even ids. PoolHost.run() concurrently
+        // writes odd ids on the io thread.
+        let mut i = 0;
+        while i < per_writer {
+            self.host.reg.set(Counter { id: i * 2, value: i });
+            i = i + 1;
+        }
+
+        // Wait for the io writer to finish. len() on a
+        // @form(hashmap) is cross-pool-callable (same exemption
+        // as set). Stale reads are fine — the loop catches up.
+        while self.host.reg.len() < total {
+            std::time::sleep(1ms);
+        }
+        let t1 = std::time::monotonic();
+
+        print("per_writer="); println(per_writer);
+        print("total="); println(self.host.reg.len());
+        print("elapsed_ns="); println(t1 - t0);
+    }
+}
+
+fn main() {
+    App { };
+}

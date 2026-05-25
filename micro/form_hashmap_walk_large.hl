@@ -1,0 +1,65 @@
+// form_hashmap_walk_large — walk a large @form(hashmap) via
+// key_at / entry_at. Measures iteration throughput on a
+// working set that exceeds L1/L2 cache; TLB-bound at scale.
+//
+// Single-pool, plain @form(hashmap) (no sync kwarg). The walk
+// is read-only and the hashmap isn't shared across pools, so
+// the F.32-0 single-pool rule applies cleanly. F.32-4a (huge
+// pages, opt-in via LOTUS_HUGE_PAGES=1) targets exactly this
+// workload — large arenas where TLB misses dominate.
+//
+// Methodology: pre-populate N entries, time the iteration
+// loop only. Each iteration calls key_at(i) + entry_at(i) so
+// both index APIs participate in the measurement. The sum is
+// printed as a read-side correctness check.
+
+type Entry {
+    id:  Int;
+    val: Int;
+}
+
+@form(hashmap)
+locus Registry {
+    capacity { pool entries of Entry indexed_by id; }
+}
+
+main locus App {
+    params { reg: Registry = Registry { }; }
+    run() {
+        // Pre-populate. Excluded from the timed region —
+        // we're measuring iteration cost, not insert cost.
+        let n = 100000;
+        let mut i = 0;
+        while i < n {
+            self.reg.set(Entry { id: i, val: i * 3 });
+            i = i + 1;
+        }
+
+        // Walk the hashmap via key_at / entry_at. Sum the
+        // values so the compiler can't elide the loads.
+        let t0 = std::time::monotonic();
+        let mut j = 0;
+        let mut sum = 0;
+        let len = self.reg.len();
+        while j < len {
+            let k = self.reg.key_at(j) or raise;
+            let e = self.reg.entry_at(j) or raise;
+            sum = sum + e.val;
+            j = j + 1;
+            // Suppress "k unused" — the key_at call has to
+            // execute for the measurement; a future pass might
+            // hoist or elide the call if its result is unused.
+            // Touching k cheaply prevents that without adding
+            // meaningful per-iteration cost.
+            sum = sum + (k - k);
+        }
+        let t1 = std::time::monotonic();
+
+        print("n="); println(n);
+        print("len="); println(len);
+        print("sum="); println(sum);
+        print("elapsed_ns="); println(t1 - t0);
+    }
+}
+
+fn main() { App { }; }

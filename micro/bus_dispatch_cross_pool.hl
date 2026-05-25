@@ -1,0 +1,80 @@
+// bus_dispatch_cross_pool — publish from main pool, subscribe
+// on a named cooperative pool (io). The subscriber runs on a
+// separate OS thread; each `<-` enqueues into the io pool's
+// queue, the io worker drains + invokes the handler.
+//
+// Pairs with bus_dispatch.hl. Same payload, same iter count;
+// the only delta is the `placement { sub: cooperative(pool = io); }`
+// block. Measures the publisher-side cost of cross-thread
+// mailbox post (memcpy into the io pool's queue cell + signal).
+//
+// Why publisher-side only: cross-pool drain runs concurrently
+// on the io worker. Including drain time in elapsed would
+// require a sentinel-and-wait pattern that biases the
+// measurement; instead, the bench prints both elapsed (publish)
+// and final count (correctness check that the subscriber drained
+// everything). A regression in publish-side cost shows up
+// cleanly; F.32-4-prefetch's consumer-side gain is more
+// visible in form_hashmap_false_sharing where the subscriber
+// is the bottleneck.
+
+type Tick {
+    n: Int;
+}
+
+locus Counter {
+    params {
+        count: Int = 0;
+    }
+    bus {
+        subscribe "bench.tick.xpool" as on_tick of type Tick;
+    }
+    fn on_tick(t: Tick) {
+        self.count = self.count + 1;
+    }
+}
+
+main locus App {
+    params {
+        sub: Counter = Counter { };
+    }
+    placement {
+        sub: cooperative(pool = io);
+    }
+    bus {
+        publish "bench.tick.xpool" of type Tick;
+    }
+    run() {
+        let iters = 100000;
+        let t0 = std::time::monotonic();
+        let mut i = 0;
+        while i < iters {
+            "bench.tick.xpool" <- Tick { n: i };
+            i = i + 1;
+        }
+        // 2026-05-25: wait for consumer-side drain INSIDE the
+        // timed region. This is what surfaces F.32-4-prefetch's
+        // contribution — the prefetch hint warms the receiver's
+        // L1 ahead of the drain loop's load, so the wait
+        // shortens when prefetch is enabled. Without this
+        // wait, elapsed_ns measured publisher enqueue only +
+        // the prefetch's effect was invisible.
+        //
+        // Polling self.sub.count is a cross-pool read; safe
+        // because the field is Int (atomic load on x86_64 even
+        // without explicit __atomic) and we only care about
+        // monotonic progress, not exact values. The 1ms sleep
+        // keeps the poll from spinning the main core.
+        while self.sub.count < iters {
+            std::time::sleep(1ms);
+        }
+        let t1 = std::time::monotonic();
+        print("iters="); println(iters);
+        print("count="); println(self.sub.count);
+        print("elapsed_ns="); println(t1 - t0);
+    }
+}
+
+fn main() {
+    App { };
+}

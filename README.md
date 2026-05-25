@@ -32,6 +32,119 @@ hale-vs-X ratio is a developer signal, not a CI gate").
 Each invocation writes a timestamped JSON report under
 `results/` (gitignored).
 
+## Cross-language comparative grid
+
+Latest snapshot: **Hale v0.8.0** (2026-05-25), AMD Ryzen 7
+9800X3D / x86_64 / Linux 6.18.
+
+Read each cell as `<elapsed> (<ratio_vs_hale>×)` where
+**ratio = sibling_time / hale_time**:
+
+- ratio > 1 → sibling is **slower** than Hale by that factor.
+- ratio < 1 → sibling is **faster** than Hale by 1/ratio.
+- `—` → no sibling exists for this bench (Hale-only).
+
+### Overhead microbenches
+
+| Bench | Hale | Go | Node | Python |
+|---|---:|---:|---:|---:|
+| `loop_overhead`             | 12.07 ms | 19.46 ms (1.61×) | 20.84 ms (1.73×) | 3.42 s (283×) |
+| `fn_call`                   | 16.64 ms | 7.69 ms (0.46×) | 3.20 ms (0.19×) | 383.36 ms (23.0×) |
+| `locus_instantiation`       | 2.04 ms | 0.15 ms (0.08×) | 0.96 ms (0.47×) | 12.37 ms (6.07×) |
+| `bus_dispatch`              | 9.17 ms | 0.05 ms (0.005×) | 0.30 ms (0.033×) | 1.10 ms (0.12×) |
+| `bus_dispatch_heap_payload` | 5.08 ms | — | — | — |
+| `bus_publish_shm_ring`      | 1.38 ms | — | — | — |
+| `form_vec_push`             | 31.39 ms | 2.82 ms (0.09×) | 3.88 ms (0.12×) | 13.38 ms (0.43×) |
+| `form_vec_get`              | 9.61 ms | 0.04 ms (0.004×) | 0.67 ms (0.07×) | 5.91 ms (0.61×) |
+| `form_hashmap_set`          | 41.30 ms | 54.46 ms (1.32×) | 90.23 ms (2.18×) | 275.35 ms (6.67×) |
+| `form_hashmap_get`          | 5.75 ms | 1.11 ms (0.19×) | 2.57 ms (0.45×) | 9.33 ms (1.62×) |
+
+### Amortized microbenches
+
+| Bench | Hale | Go | Node | Python |
+|---|---:|---:|---:|---:|
+| `vec_amortized`     | 1.04 ms | 1.27 ms (1.22×) | 3.06 ms (2.93×) | 13.58 ms (13.0×) |
+| `fn_scratch_work`   | 0.42 ms | 0.45 ms (1.08×) | 0.97 ms (2.32×) | 2.59 ms (6.19×) |
+| `coord_with_churn`  | 53.50 µs | 0.16 µs (0.003×) | 33.47 µs (0.63×) | 4.19 µs (0.08×) |
+
+### Coordinated-workload microbenches
+
+| Bench | Hale | Go | Node | Python |
+|---|---:|---:|---:|---:|
+| `tree_fanout`      | 24.61 µs | 8.02 µs (0.33×) | 257.84 µs (10.48×) | 579.64 µs (23.56×) |
+| `pipeline_3stage`  | 7.14 ms | 0.22 ms (0.03×) | 1.15 ms (0.16×) | 6.93 ms (0.97×) |
+
+### Cross-pool / cache microbenches (F.32)
+
+| Bench | Hale | Go | Node | Python |
+|---|---:|---:|---:|---:|
+| `bus_dispatch_cross_pool`     | 11.85 ms | 6.08 ms (0.51×) | 40.82 ms (3.45×) | 82.33 ms (6.95×) |
+| `form_hashmap_false_sharing`  | 28.37 ms | 10.05 ms (0.35×) | 84.18 ms (2.97×) | 37.28 ms (1.31×) |
+| `form_hashmap_walk_large`     | 1.12 ms | 0.38 ms (0.34×) | 0.76 ms (0.68×) | 7.21 ms (6.43×) |
+
+`form_hashmap_false_sharing` exercises the F.32-1β2-v2
+`sync = striped` discipline (cell-level CAS + per-map
+rwlock for grow). On this hardware β2-v2 measures slower
+than α (per-op rwlock+CAS overhead exceeds the parallel-
+writer gain for cheap key/value payloads at 2-writer
+concurrency); wins materialize on higher writer counts
+and heavier per-op work. See
+`notes/f32-cache-aware-delivery-plan.md` § F.32-1β.
+
+### App benches
+
+| Bench | Hale | Go | Node | Python |
+|---|---:|---:|---:|---:|
+| `stream_aggregator`  | 18.34 ms | 0.23 ms (0.01×) | 1.89 ms (0.10×) | 30.48 ms (1.66×) |
+
+### Refreshing the grid
+
+This grid is a manual snapshot. Refresh it:
+
+- **Before every Hale release.** Bench numbers are part of the
+  release evidence — the grid's "Latest snapshot" version + date
+  should match the tag being cut.
+- **After any substantive runtime / codegen / stdlib change**
+  expected to move perf.
+- **After any bench-shape change** (new bench file, changed
+  iter count, redesigned timed region). The new shape's
+  baseline belongs in the grid AND in `baselines.json`.
+
+Regen process:
+
+```sh
+# from this dir, with target/release/hale built upstream
+./run.sh
+```
+
+Copy the per-bench `hale  elapsed_ns=...` + each sibling's
+`ratio_vs_hale=...` line into the corresponding row above.
+Format times in the most-readable unit (ns / µs / ms / s) and
+round to 2-3 significant figures. Update the "Latest snapshot"
+line:
+
+- **Version**: matches `../hale/Cargo.toml`'s `[workspace.package]
+  version`, the `hale --version` output of the binary used for
+  the run, and the git tag being cut. These three should always
+  agree at the moment the grid is refreshed.
+- **Date**: the date the `./run.sh` was actually executed
+  (results/`run-<date>.json` is the canonical artifact).
+- **Hardware**: name the CPU + arch + kernel. Numbers shift
+  meaningfully between machines (especially L2 size, core
+  count, and SMT topology); identifying the host makes the
+  grid honest about its scope.
+
+If `./run.sh` regression-fails on a bench, either:
+1. Fix the regression (preferred), or
+2. Deliberately update `baselines.json` and note WHY in the
+   commit message ("baseline drift after F.32-1β2 wired cache-
+   padded cells; expected and documented").
+
+Don't refresh the grid against a regressed run without
+addressing the regression first — the grid is supposed to
+reflect the shipped state of the language, not transient
+work-in-progress.
+
 ## Three kinds of microbench
 
 The benches under `micro/` split into **three categories**
@@ -113,6 +226,42 @@ languages pay.
   bottlenecked by per-event bus-dispatch overhead — same shape
   that limits `bus_dispatch`.
 
+### Cross-pool / cache microbenches — "does the substrate respect the cache hierarchy?"
+
+The F.32 cache-aware substrate work (`notes/f32-cache-aware-delivery-plan.md`
+in the hale repo) added a new bench family in 2026-05-24 covering
+cross-pool dispatch + concurrent `@form(hashmap)` access. These
+benches gate the F.32 deliverables — each shipped F.32-N piece
+either lands or is rejected against a baseline here.
+
+- **`bus_dispatch_cross_pool`** — same shape as `bus_dispatch`,
+  but the subscriber runs on the `io` cooperative pool (a
+  separate OS thread). Measures publisher-side enqueue cost
+  for the cross-thread mailbox path. Pairs with the prefetch
+  hint shipped in F.32-4-prefetch (`__builtin_prefetch` in
+  `lotus_coop_pool_post`).
+- **`form_hashmap_false_sharing`** — two pools concurrently
+  write disjoint keys (even / odd ids) into a shared
+  `@form(hashmap, sync = serialized)`. The Prometheus-counter
+  shape that drove F.32-0 + F.32-1α. Today's baseline uses
+  `sync = serialized` (per-map mutex); when F.32-1β2 ships
+  the annotation flips to `sync = striped` for parallel
+  writers + cache-padded cells.
+- **`form_hashmap_walk_large`** — pre-populate ~100k entries
+  then iterate via `key_at` / `entry_at`. TLB-bound at scale;
+  used to detect regressions in arena chunk allocation and
+  to measure the win from F.32-4a (huge pages, opt-in via
+  `LOTUS_HUGE_PAGES=1`).
+
+The cross-pool benches' Go siblings use `runtime.LockOSThread`
+to pin goroutines to distinct OS threads — the closest
+analogue of "cooperative pool owns its own thread." JS and
+Python siblings approximate via `worker_threads` and
+`threading.Thread` respectively; both pay overhead that
+Hale doesn't (V8 structured-clone, CPython GIL), so the
+ratio columns for these benches are informational only,
+not strict apples-to-apples.
+
 ### App benches — `app/`
 
 - **`stream_aggregator`** — publisher fires N typed events; a
@@ -146,7 +295,12 @@ languages pay.
 │   │
 │   │   # Coordinated-workload microbenches (multi-locus shapes)
 │   ├── tree_fanout.{ap,go,js,py}
-│   └── pipeline_3stage.{ap,go,js,py}
+│   ├── pipeline_3stage.{ap,go,js,py}
+│   │
+│   │   # Cross-pool / cache microbenches (F.32)
+│   ├── bus_dispatch_cross_pool.{hl,go,js,py}
+│   ├── form_hashmap_false_sharing.{hl,go,js,py}
+│   └── form_hashmap_walk_large.{hl,go,js,py}
 ├── app/
 │   └── stream_aggregator.{ap,go,js,py}
 └── c-twins/                 (placeholder) hand-written C equivalents

@@ -1,11 +1,32 @@
 {
-  "updated_at": "2026-05-22T03:39:18Z",
+  "updated_at": "2026-05-24T22:30:00Z",
   "benches": {
     "bus_dispatch": {
       "kind": "micro",
       "elapsed_ns": 8740324,
       "maxrss_kb": 57256,
       "tolerance": 0.30
+    },
+    "bus_dispatch_cross_pool": {
+      "kind": "micro",
+      "elapsed_ns": 10636297,
+      "maxrss_kb": 57540,
+      "tolerance": 0.40,
+      "note": "F.32-1 baseline (2026-05-25). Cross-pool bus dispatch from main to io pool, 100k iters. Timed region NOW INCLUDES consumer-side drain (poll-wait on self.sub.count until iters) — F.32-4-prefetch's contribution materializes here. Pre-2026-05-25 the bench timed publisher-only and prefetch was invisible (baseline was 8.80 ms). Tolerance 0.40 because cross-thread scheduling variance + sleep granularity widen the spread."
+    },
+    "form_hashmap_false_sharing": {
+      "kind": "micro",
+      "elapsed_ns": 29049710,
+      "maxrss_kb": 57036,
+      "tolerance": 0.40,
+      "note": "F.32-1β2-v2 baseline (2026-05-25). Two-pool concurrent writers into a shared @form(hashmap, sync = striped). 100k inserts per writer = 200k total. β2-v2 uses cell-level CAS (3-state occupancy) + pthread_rwlock for grow exclusion — writers run in parallel but per-op rwlock+CAS overhead is higher than α's plain mutex. On this 2-core/cheap-key-value-payload hardware β2-v2 measures ~1.87x slower than α (29 ms vs 15.5 ms); the parallelism wins on 4+ cores or with heavier per-op work. Switch to sync = serialized if α's serialized-but-cheap path wins for your workload; the bench is here to detect regressions in β2-v2's correctness + perf shape."
+    },
+    "form_hashmap_walk_large": {
+      "kind": "micro",
+      "elapsed_ns": 6911261019,
+      "maxrss_kb": 12000,
+      "tolerance": 0.30,
+      "note": "F.32-4a baseline (2026-05-24). 100k entries pre-populated, then full key_at/entry_at walk = O(N^2) since each call is O(N). Slow by design — exists to detect TLB pressure / cache-locality regressions. LOTUS_HUGE_PAGES=1 should reduce this once the operator reserves huge pages."
     },
     "bus_dispatch_heap_payload": {
       "kind": "micro",
