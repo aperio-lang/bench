@@ -16,10 +16,10 @@
     },
     "form_hashmap_false_sharing": {
       "kind": "micro",
-      "elapsed_ns": 29049710,
-      "maxrss_kb": 57036,
+      "elapsed_ns": 11952056,
+      "maxrss_kb": 41032,
       "tolerance": 0.40,
-      "note": "F.32-1β2-v2 baseline (2026-05-25). Two-pool concurrent writers into a shared @form(hashmap, sync = striped). 100k inserts per writer = 200k total. β2-v2 uses cell-level CAS (3-state occupancy) + pthread_rwlock for grow exclusion — writers run in parallel but per-op rwlock+CAS overhead is higher than α's plain mutex. On this 2-core/cheap-key-value-payload hardware β2-v2 measures ~1.87x slower than α (29 ms vs 15.5 ms); the parallelism wins on 4+ cores or with heavier per-op work. Switch to sync = serialized if α's serialized-but-cheap path wins for your workload; the bench is here to detect regressions in β2-v2's correctness + perf shape."
+      "note": "F.32-1γ-v1 baseline (2026-05-25). Two-pool concurrent writers into a shared @form(hashmap, sync = lockfree, cap = 300000). 100k inserts per writer = 200k total. γ-v1 uses cell-level CAS (3-state occupancy) with NO rwlock or mutex — pure atomic ops on slot[0] + memcpy. On this 2-core / cheap-payload bench: γ-v1 is ~1.39x faster than α (serialized) and ~2.54x faster than β2-v2 (striped+rwlock); closes the gap with Go's sync.Mutex map from 1.66x to 1.18x. γ-v1 is fixed-cap (no grow) and remove-less — author sized cap to 1.5x expected entries to keep linear-probe latency bounded."
     },
     "form_hashmap_walk_large": {
       "kind": "micro",

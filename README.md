@@ -79,17 +79,20 @@ Read each cell as `<elapsed> (<ratio_vs_hale>×)` where
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
 | `bus_dispatch_cross_pool`     | 11.85 ms | 6.08 ms (0.51×) | 40.82 ms (3.45×) | 82.33 ms (6.95×) |
-| `form_hashmap_false_sharing`  | 28.37 ms | 10.05 ms (0.35×) | 84.18 ms (2.97×) | 37.28 ms (1.31×) |
+| `form_hashmap_false_sharing`  | 11.95 ms | 10.12 ms (0.85×) | 85.83 ms (7.18×) | 36.69 ms (3.07×) |
 | `form_hashmap_walk_large`     | 1.12 ms | 0.38 ms (0.34×) | 0.76 ms (0.68×) | 7.21 ms (6.43×) |
 
-`form_hashmap_false_sharing` exercises the F.32-1β2-v2
-`sync = striped` discipline (cell-level CAS + per-map
-rwlock for grow). On this hardware β2-v2 measures slower
-than α (per-op rwlock+CAS overhead exceeds the parallel-
-writer gain for cheap key/value payloads at 2-writer
-concurrency); wins materialize on higher writer counts
-and heavier per-op work. See
-`notes/f32-cache-aware-delivery-plan.md` § F.32-1β.
+`form_hashmap_false_sharing` exercises the F.32-1γ-v1
+`sync = lockfree` discipline (cell-level CAS, no rwlock,
+no mutex; fixed cap). On this 2-core / cheap-payload
+bench, γ-v1 closes the gap with Go's sync.Mutex map from
+1.66× (under α serialized) to 1.18×. The annotation chain
+shows the F.32-1 alternatives in order of measured perf
+on this hardware: γ-v1 (lockfree) > α (serialized) >
+β2-v2 (striped+rwlock). On higher-core-count hardware or
+heavier per-op work, the ordering shifts; see
+`notes/f32-cache-aware-delivery-plan.md` § F.32-1 for the
+per-discipline trade-off table.
 
 ### App benches
 
