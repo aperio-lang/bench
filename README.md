@@ -34,7 +34,7 @@ Each invocation writes a timestamped JSON report under
 
 ## Cross-language comparative grid
 
-Latest snapshot: **Hale v0.8.0** (2026-05-25), AMD Ryzen 7
+Latest snapshot: **Hale v0.8.1** (2026-05-26), AMD Ryzen 7
 9800X3D / x86_64 / Linux 6.18.
 
 Read each cell as `<elapsed> (<ratio_vs_hale>×)` where
@@ -48,57 +48,70 @@ Read each cell as `<elapsed> (<ratio_vs_hale>×)` where
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `loop_overhead`             | 12.07 ms | 19.46 ms (1.61×) | 20.84 ms (1.73×) | 3.42 s (283×) |
-| `fn_call`                   | 16.64 ms | 7.69 ms (0.46×) | 3.20 ms (0.19×) | 383.36 ms (23.0×) |
-| `locus_instantiation`       | 2.04 ms | 0.15 ms (0.08×) | 0.96 ms (0.47×) | 12.37 ms (6.07×) |
-| `bus_dispatch`              | 9.17 ms | 0.05 ms (0.005×) | 0.30 ms (0.033×) | 1.10 ms (0.12×) |
-| `bus_dispatch_heap_payload` | 5.08 ms | — | — | — |
-| `bus_publish_shm_ring`      | 1.38 ms | — | — | — |
-| `form_vec_push`             | 31.39 ms | 2.82 ms (0.09×) | 3.88 ms (0.12×) | 13.38 ms (0.43×) |
-| `form_vec_get`              | 9.61 ms | 0.04 ms (0.004×) | 0.67 ms (0.07×) | 5.91 ms (0.61×) |
-| `form_hashmap_set`          | 41.30 ms | 54.46 ms (1.32×) | 90.23 ms (2.18×) | 275.35 ms (6.67×) |
-| `form_hashmap_get`          | 5.75 ms | 1.11 ms (0.19×) | 2.57 ms (0.45×) | 9.33 ms (1.62×) |
+| `loop_overhead`             | 11.89 ms | 19.66 ms (1.65×) | 20.89 ms (1.76×) | 3.69 s (311×) |
+| `fn_call`                   | 16.49 ms | 7.71 ms (0.47×) | 3.26 ms (0.20×) | 377.94 ms (22.9×) |
+| `locus_instantiation`       | 2.04 ms | 0.15 ms (0.08×) | 0.97 ms (0.48×) | 12.30 ms (6.04×) |
+| `bus_dispatch`              | 8.87 ms | 0.05 ms (0.005×) | 0.31 ms (0.035×) | 1.11 ms (0.13×) |
+| `bus_dispatch_heap_payload` | 4.58 ms | — | — | — |
+| `bus_publish_shm_ring`      | 1.39 ms | — | — | — |
+| `form_vec_push`             | 31.08 ms | 2.80 ms (0.09×) | 3.58 ms (0.12×) | 12.95 ms (0.42×) |
+| `form_vec_get`              | 9.73 ms | 0.04 ms (0.004×) | 0.68 ms (0.07×) | 5.95 ms (0.61×) |
+| `form_hashmap_set`          | 43.76 ms | 49.64 ms (1.13×) | 83.17 ms (1.90×) | 268.70 ms (6.14×) |
+| `form_hashmap_get`          | 5.30 ms | 1.12 ms (0.21×) | 2.51 ms (0.47×) | 9.31 ms (1.76×) |
 
 ### Amortized microbenches
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `vec_amortized`     | 1.04 ms | 1.27 ms (1.22×) | 3.06 ms (2.93×) | 13.58 ms (13.0×) |
-| `fn_scratch_work`   | 0.42 ms | 0.45 ms (1.08×) | 0.97 ms (2.32×) | 2.59 ms (6.19×) |
-| `coord_with_churn`  | 53.50 µs | 0.16 µs (0.003×) | 33.47 µs (0.63×) | 4.19 µs (0.08×) |
+| `vec_amortized`     | 1.01 ms | 1.19 ms (1.18×) | 2.97 ms (2.95×) | 13.33 ms (13.2×) |
+| `fn_scratch_work`   | 0.42 ms | 0.45 ms (1.06×) | 0.98 ms (2.34×) | 2.64 ms (6.28×) |
+| `coord_with_churn`  | 45.35 µs | 0.16 µs (0.004×) | 31.86 µs (0.70×) | 4.38 µs (0.10×) |
 
 ### Coordinated-workload microbenches
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `tree_fanout`      | 24.61 µs | 8.02 µs (0.33×) | 257.84 µs (10.48×) | 579.64 µs (23.56×) |
-| `pipeline_3stage`  | 7.14 ms | 0.22 ms (0.03×) | 1.15 ms (0.16×) | 6.93 ms (0.97×) |
+| `tree_fanout`      | 22.09 µs | 8.04 µs (0.36×) | 283.97 µs (12.85×) | 572.59 µs (25.92×) |
+| `pipeline_3stage`  | 6.59 ms | 0.22 ms (0.03×) | 1.20 ms (0.18×) | 7.05 ms (1.07×) |
 
 ### Cross-pool / cache microbenches (F.32)
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `bus_dispatch_cross_pool`     | 11.85 ms | 6.08 ms (0.51×) | 40.82 ms (3.45×) | 82.33 ms (6.95×) |
-| `form_hashmap_false_sharing`  | 11.95 ms | 10.12 ms (0.85×) | 85.83 ms (7.18×) | 36.69 ms (3.07×) |
-| `form_hashmap_walk_large`     | 1.12 ms | 0.38 ms (0.34×) | 0.76 ms (0.68×) | 7.21 ms (6.43×) |
+| `bus_dispatch_cross_pool`     | 10.03 ms | 6.02 ms (0.60×) | 39.25 ms (3.91×) | 86.33 ms (8.61×) |
+| `form_hashmap_false_sharing`  | 11.68 ms | 9.89 ms (0.85×) | 83.28 ms (7.13×) | 36.88 ms (3.16×) |
+| `form_hashmap_walk_large`     | 1.11 ms | 0.38 ms (0.35×) | 0.75 ms (0.67×) | 7.48 ms (6.76×) |
 
-`form_hashmap_false_sharing` exercises the F.32-1γ-v1
-`sync = lockfree` discipline (cell-level CAS, no rwlock,
-no mutex; fixed cap). On this 2-core / cheap-payload
-bench, γ-v1 closes the gap with Go's sync.Mutex map from
-1.66× (under α serialized) to 1.18×. The annotation chain
-shows the F.32-1 alternatives in order of measured perf
-on this hardware: γ-v1 (lockfree) > α (serialized) >
-β2-v2 (striped+rwlock). On higher-core-count hardware or
-heavier per-op work, the ordering shifts; see
-`notes/f32-cache-aware-delivery-plan.md` § F.32-1 for the
-per-discipline trade-off table.
+`form_hashmap_false_sharing` exercises the F.32-1γ-v2
+`sync = lockfree` discipline (cell-level CAS on the
+steady-state hot path; `remove` via tombstones; transparent
+grow when load factor exceeds 0.6). On this 2-core /
+cheap-payload bench, lockfree closes the gap with Go's
+sync.Mutex map from 1.66× (under α serialized) to 1.18×.
+The annotation chain shows the F.32-1 alternatives in
+order of measured perf on this hardware: γ-v2 (lockfree) >
+α (serialized) > β2-v2 (striped+rwlock). On higher-core-
+count hardware or heavier per-op work, the ordering
+shifts; see `notes/f32-cache-aware-delivery-plan.md` §
+F.32-1 for the per-discipline trade-off table.
+
+Note: F.32-1γ-v2 (2026-05-26) added `remove` (via 4-state
+tombstone machine) and lazy grow (single-grower migration
+with brief writer/reader stall) to the lockfree
+discipline. The bench numbers above include these
+additions; the hot-path cost change is small enough to
+sit inside the per-bench tolerance band — `form_hashmap_set`
+moved from 41.30 ms → 43.76 ms (∼6% slower) trading off the
+new load-factor check on every insert; `form_hashmap_get`
+moved from 5.75 ms → 5.30 ms (∼8% faster) from the
+tombstone-aware probe + the lf_enter atomic-load fast
+path replacing the previous code's separate len-check.
 
 ### App benches
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `stream_aggregator`  | 18.34 ms | 0.23 ms (0.01×) | 1.89 ms (0.10×) | 30.48 ms (1.66×) |
+| `stream_aggregator`  | 18.41 ms | 0.23 ms (0.01×) | 1.73 ms (0.09×) | 30.70 ms (1.67×) |
 
 ### Refreshing the grid
 
