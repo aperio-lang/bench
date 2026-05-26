@@ -48,39 +48,39 @@ Read each cell as `<elapsed> (<ratio_vs_hale>×)` where
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `loop_overhead`             | 11.89 ms | 19.66 ms (1.65×) | 20.89 ms (1.76×) | 3.69 s (311×) |
-| `fn_call`                   | 16.49 ms | 7.71 ms (0.47×) | 3.26 ms (0.20×) | 377.94 ms (22.9×) |
-| `locus_instantiation`       | 2.04 ms | 0.15 ms (0.08×) | 0.97 ms (0.48×) | 12.30 ms (6.04×) |
-| `bus_dispatch`              | 8.87 ms | 0.05 ms (0.005×) | 0.31 ms (0.035×) | 1.11 ms (0.13×) |
-| `bus_dispatch_heap_payload` | 4.58 ms | — | — | — |
-| `bus_publish_shm_ring`      | 1.39 ms | — | — | — |
-| `form_vec_push`             | 31.08 ms | 2.80 ms (0.09×) | 3.58 ms (0.12×) | 12.95 ms (0.42×) |
-| `form_vec_get`              | 9.73 ms | 0.04 ms (0.004×) | 0.68 ms (0.07×) | 5.95 ms (0.61×) |
-| `form_hashmap_set`          | 43.76 ms | 49.64 ms (1.13×) | 83.17 ms (1.90×) | 268.70 ms (6.14×) |
-| `form_hashmap_get`          | 5.30 ms | 1.12 ms (0.21×) | 2.51 ms (0.47×) | 9.31 ms (1.76×) |
+| `loop_overhead`             | 12.06 ms | 19.75 ms (1.64×) | 20.87 ms (1.73×) | 3.60 s (298×) |
+| `fn_call`                   | 16.56 ms | 7.72 ms (0.47×) | 3.22 ms (0.19×) | 387.08 ms (23.4×) |
+| `locus_instantiation`       | 2.03 ms | 0.15 ms (0.08×) | 3.68 ms (1.81×) | 12.06 ms (5.94×) |
+| `bus_dispatch`              | 9.59 ms | 0.05 ms (0.005×) | 0.34 ms (0.035×) | 1.15 ms (0.12×) |
+| `bus_dispatch_heap_payload` | 5.15 ms | — | — | — |
+| `bus_publish_shm_ring`      | 1.38 ms | — | — | — |
+| `form_vec_push`             | 30.96 ms | 3.12 ms (0.10×) | 3.69 ms (0.12×) | 13.11 ms (0.42×) |
+| `form_vec_get`              | 9.71 ms | 0.04 ms (0.004×) | 0.64 ms (0.07×) | 5.66 ms (0.58×) |
+| `form_hashmap_set`          | 45.19 ms | 49.37 ms (1.09×) | 83.48 ms (1.85×) | 270.01 ms (5.97×) |
+| `form_hashmap_get`          | 5.90 ms | 1.10 ms (0.19×) | 2.53 ms (0.43×) | 9.43 ms (1.60×) |
 
 ### Amortized microbenches
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `vec_amortized`     | 1.01 ms | 1.19 ms (1.18×) | 2.97 ms (2.95×) | 13.33 ms (13.2×) |
-| `fn_scratch_work`   | 0.42 ms | 0.45 ms (1.06×) | 0.98 ms (2.34×) | 2.64 ms (6.28×) |
-| `coord_with_churn`  | 45.35 µs | 0.16 µs (0.004×) | 31.86 µs (0.70×) | 4.38 µs (0.10×) |
+| `vec_amortized`     | 1.05 ms | 1.37 ms (1.30×) | 3.13 ms (2.98×) | 13.91 ms (13.2×) |
+| `fn_scratch_work`   | 0.42 ms | 0.48 ms (1.14×) | 0.95 ms (2.25×) | 2.59 ms (6.11×) |
+| `coord_with_churn`  | 46.86 µs | 0.16 µs (0.003×) | 32.51 µs (0.69×) | 4.25 µs (0.09×) |
 
 ### Coordinated-workload microbenches
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `tree_fanout`      | 22.09 µs | 8.04 µs (0.36×) | 283.97 µs (12.85×) | 572.59 µs (25.92×) |
-| `pipeline_3stage`  | 6.59 ms | 0.22 ms (0.03×) | 1.20 ms (0.18×) | 7.05 ms (1.07×) |
+| `tree_fanout`      | 22.88 µs | 8.16 µs (0.36×) | 311.40 µs (13.61×) | 580.63 µs (25.37×) |
+| `pipeline_3stage`  | 7.71 ms | 0.22 ms (0.03×) | 1.25 ms (0.16×) | 7.40 ms (0.96×) |
 
 ### Cross-pool / cache microbenches (F.32)
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `bus_dispatch_cross_pool`     | 10.03 ms | 6.02 ms (0.60×) | 39.25 ms (3.91×) | 86.33 ms (8.61×) |
-| `form_hashmap_false_sharing`  | 11.68 ms | 9.89 ms (0.85×) | 83.28 ms (7.13×) | 36.88 ms (3.16×) |
-| `form_hashmap_walk_large`     | 1.11 ms | 0.38 ms (0.35×) | 0.75 ms (0.67×) | 7.48 ms (6.76×) |
+| `bus_dispatch_cross_pool`     | 11.18 ms | 6.18 ms (0.55×) | 38.94 ms (3.48×) | 82.08 ms (7.34×) |
+| `form_hashmap_false_sharing`  | 12.01 ms | 9.58 ms (0.80×) | 86.85 ms (7.23×) | 36.72 ms (3.06×) |
+| `form_hashmap_walk_large`     | 1.15 ms | 0.39 ms (0.33×) | 0.77 ms (0.67×) | 7.00 ms (6.08×) |
 
 `form_hashmap_false_sharing` exercises the F.32-1γ-v2
 `sync = lockfree` discipline (cell-level CAS on the
@@ -98,20 +98,34 @@ F.32-1 for the per-discipline trade-off table.
 Note: F.32-1γ-v2 (2026-05-26) added `remove` (via 4-state
 tombstone machine) and lazy grow (single-grower migration
 with brief writer/reader stall) to the lockfree
-discipline. The bench numbers above include these
-additions; the hot-path cost change is small enough to
+discipline. The hot-path cost change is small enough to
 sit inside the per-bench tolerance band — `form_hashmap_set`
-moved from 41.30 ms → 43.76 ms (∼6% slower) trading off the
+moved from 41.30 ms → ~45 ms (∼9% slower) trading off the
 new load-factor check on every insert; `form_hashmap_get`
-moved from 5.75 ms → 5.30 ms (∼8% faster) from the
+moved from 5.75 ms → 5.90 ms (∼3% faster vs v0.8.0; held
+roughly steady after substrate-race fixes) from the
 tombstone-aware probe + the lf_enter atomic-load fast
 path replacing the previous code's separate len-check.
+
+A second update later the same day (substrate-race fixes:
+bus queue multi-thread flag, arena subregion mutex,
+pthread_once on env-var helpers) added correctness cost to
+the bus-dispatch hot path. `lotus_bus_queue_drain` now
+always takes its mutex when a cooperative pool worker is
+running — previously it skipped the lock for cooperative
+workloads (the bug being fixed) and silently raced on
+head/tail. Visible delta vs the morning's snapshot:
+`bus_dispatch` 8.87 → 9.59 ms (+8%), `bus_dispatch_cross_pool`
+10.03 → 11.18 ms (+11%), `bus_dispatch_heap_payload` 4.58
+→ 5.15 ms (+12%). The arena mutex adds smaller per-locus
+cost (~tens of ns per create/destroy) that doesn't surface
+above noise on any single bench.
 
 ### App benches
 
 | Bench | Hale | Go | Node | Python |
 |---|---:|---:|---:|---:|
-| `stream_aggregator`  | 18.41 ms | 0.23 ms (0.01×) | 1.73 ms (0.09×) | 30.70 ms (1.67×) |
+| `stream_aggregator`  | 19.50 ms | 0.23 ms (0.01×) | 1.72 ms (0.09×) | 31.34 ms (1.61×) |
 
 ### Refreshing the grid
 
