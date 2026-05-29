@@ -5,40 +5,40 @@
       "kind": "micro",
       "elapsed_ns": 8740324,
       "maxrss_kb": 57256,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "bus_dispatch_cross_pool": {
       "kind": "micro",
-      "elapsed_ns": 10636297,
-      "maxrss_kb": 57540,
-      "tolerance": 0.40,
-      "note": "F.32-1 baseline (2026-05-25). Cross-pool bus dispatch from main to io pool, 100k iters. Timed region NOW INCLUDES consumer-side drain (poll-wait on self.sub.count until iters) — F.32-4-prefetch's contribution materializes here. Pre-2026-05-25 the bench timed publisher-only and prefetch was invisible (baseline was 8.80 ms). Tolerance 0.40 because cross-thread scheduling variance + sleep granularity widen the spread."
+      "elapsed_ns": 20500000,
+      "maxrss_kb": 53756,
+      "tolerance": 0.4,
+      "note": "F.32-1 baseline (2026-05-25). Cross-pool bus dispatch from main to io pool, 100k iters. Timed region NOW INCLUDES consumer-side drain (poll-wait on self.sub.count until iters) \u2014 F.32-4-prefetch's contribution materializes here. Pre-2026-05-25 the bench timed publisher-only and prefetch was invisible (baseline was 8.80 ms). Tolerance 0.40 because cross-thread scheduling variance + sleep granularity widen the spread. | Re-baselined 2026-05-29: the increase to ~20ms is correctness-driven \u2014 the per-arena subregion_lock (2026-05-26), the 3a9c991 bus_queue_drain race fix, and 0d1f956's per-thread-correct wire dispatch (serialize + per-subscriber deserialize to honor the single-threaded-method invariant). A flat-payload, local-only serialize-skip optimization is a deferred follow-up; the residual here is not a perf bug."
     },
     "form_hashmap_false_sharing": {
       "kind": "micro",
       "elapsed_ns": 11952056,
       "maxrss_kb": 41032,
-      "tolerance": 0.40,
-      "note": "F.32-1γ-v1 baseline (2026-05-25). Two-pool concurrent writers into a shared @form(hashmap, sync = lockfree, cap = 300000). 100k inserts per writer = 200k total. γ-v1 uses cell-level CAS (3-state occupancy) with NO rwlock or mutex — pure atomic ops on slot[0] + memcpy. On this 2-core / cheap-payload bench: γ-v1 is ~1.39x faster than α (serialized) and ~2.54x faster than β2-v2 (striped+rwlock); closes the gap with Go's sync.Mutex map from 1.66x to 1.18x. γ-v1 is fixed-cap (no grow) and remove-less — author sized cap to 1.5x expected entries to keep linear-probe latency bounded."
+      "tolerance": 0.4,
+      "note": "F.32-1\u03b3-v1 baseline (2026-05-25). Two-pool concurrent writers into a shared @form(hashmap, sync = lockfree, cap = 300000). 100k inserts per writer = 200k total. \u03b3-v1 uses cell-level CAS (3-state occupancy) with NO rwlock or mutex \u2014 pure atomic ops on slot[0] + memcpy. On this 2-core / cheap-payload bench: \u03b3-v1 is ~1.39x faster than \u03b1 (serialized) and ~2.54x faster than \u03b22-v2 (striped+rwlock); closes the gap with Go's sync.Mutex map from 1.66x to 1.18x. \u03b3-v1 is fixed-cap (no grow) and remove-less \u2014 author sized cap to 1.5x expected entries to keep linear-probe latency bounded."
     },
     "form_hashmap_walk_large": {
       "kind": "micro",
       "elapsed_ns": 6911261019,
       "maxrss_kb": 12000,
-      "tolerance": 0.30,
-      "note": "F.32-4a baseline (2026-05-24). 100k entries pre-populated, then full key_at/entry_at walk = O(N^2) since each call is O(N). Slow by design — exists to detect TLB pressure / cache-locality regressions. LOTUS_HUGE_PAGES=1 should reduce this once the operator reserves huge pages."
+      "tolerance": 0.3,
+      "note": "F.32-4a baseline (2026-05-24). 100k entries pre-populated, then full key_at/entry_at walk = O(N^2) since each call is O(N). Slow by design \u2014 exists to detect TLB pressure / cache-locality regressions. LOTUS_HUGE_PAGES=1 should reduce this once the operator reserves huge pages."
     },
     "bus_dispatch_heap_payload": {
       "kind": "micro",
       "elapsed_ns": 4838914,
       "maxrss_kb": 31456,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "bus_publish_shm_ring": {
       "kind": "micro",
       "elapsed_ns": 1379558,
       "maxrss_kb": 5124,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "coord_with_churn": {
       "kind": "micro",
@@ -50,73 +50,74 @@
       "kind": "micro",
       "elapsed_ns": 16509134,
       "maxrss_kb": 5040,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "fn_scratch_work": {
       "kind": "micro",
       "elapsed_ns": 404015,
       "maxrss_kb": 4992,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "form_hashmap_get": {
       "kind": "micro",
       "elapsed_ns": 8865979,
       "maxrss_kb": 48788,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "form_hashmap_set": {
       "kind": "micro",
       "elapsed_ns": 48356203,
       "maxrss_kb": 92928,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "form_vec_get": {
       "kind": "micro",
       "elapsed_ns": 9623886,
       "maxrss_kb": 43984,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "form_vec_push": {
       "kind": "micro",
       "elapsed_ns": 31035452,
       "maxrss_kb": 82960,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "locus_instantiation": {
       "kind": "micro",
-      "elapsed_ns": 1785337,
-      "maxrss_kb": 5132,
-      "tolerance": 0.30
+      "elapsed_ns": 2450000,
+      "maxrss_kb": 5248,
+      "tolerance": 0.3,
+      "note": "Re-baselined 2026-05-29. The per-arena subregion_lock correctness fix (2026-05-26, cross-pool freelist race) raised this ~91% (1.79->3.94ms). hale 856dc7d's single-thread fast-path recovered most of it (->~2.43ms); the residual is the per-arena mutex init, removable only by a lock-free subregion freelist (deferred follow-up). Measured on the dev box; the prior 1.785ms baseline was faster hardware (pre-mutex control here was ~1.99ms)."
     },
     "loop_overhead": {
       "kind": "micro",
       "elapsed_ns": 12014895,
       "maxrss_kb": 5140,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "pipeline_3stage": {
       "kind": "micro",
       "elapsed_ns": 7516528,
       "maxrss_kb": 39124,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "tree_fanout": {
       "kind": "micro",
       "elapsed_ns": 23665,
       "maxrss_kb": 5136,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "vec_amortized": {
       "kind": "micro",
       "elapsed_ns": 1079067,
       "maxrss_kb": 6456,
-      "tolerance": 0.30
+      "tolerance": 0.3
     },
     "stream_aggregator": {
       "kind": "app",
       "elapsed_ns": 18109545,
       "maxrss_kb": 109584,
-      "tolerance": 0.30
+      "tolerance": 0.3
     }
   }
 }
